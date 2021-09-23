@@ -600,7 +600,7 @@ public class HighwayBuilder extends Module {
         },
 
         MineEnderChests {
-            private static final MBlockPos pos = new MBlockPos();
+            private final MBlockPos pos = new MBlockPos();
 
             private int minimumObsidian;
             private boolean first;
