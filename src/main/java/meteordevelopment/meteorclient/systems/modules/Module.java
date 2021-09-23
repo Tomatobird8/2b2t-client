@@ -38,6 +38,7 @@ public abstract class Module implements ISerializable<Module> {
     private boolean visible = true;
 
     public boolean serialize = true;
+    public boolean runInMainMenu = false;
 
     public final Keybind keybind = Keybind.none();
     public boolean toggleOnBindRelease = false;
@@ -58,20 +59,20 @@ public abstract class Module implements ISerializable<Module> {
     public void onActivate() {}
     public void onDeactivate() {}
 
-    public void toggle(boolean onToggle) {
+    public void toggle() {
         if (!active) {
             active = true;
             Modules.get().addActive(this);
 
             settings.onActivated();
 
-            if (onToggle) {
+            if (runInMainMenu || Utils.canUpdate()) {
                 MeteorClient.EVENT_BUS.subscribe(this);
                 onActivate();
             }
         }
         else {
-            if (onToggle) {
+            if (runInMainMenu || Utils.canUpdate()) {
                 MeteorClient.EVENT_BUS.unsubscribe(this);
                 onDeactivate();
             }
@@ -81,27 +82,30 @@ public abstract class Module implements ISerializable<Module> {
         }
     }
 
-    public void toggle() {
-        toggle(true);
-    }
-
     public void sendToggledMsg() {
-        if (Config.get().chatCommandsInfo) ChatUtils.sendMsg(this.hashCode(), Formatting.GRAY, "Toggled (highlight)%s(default) %s(default).", title, isActive() ? Formatting.GREEN + "on" : Formatting.RED + "off");
+        if (Config.get().chatCommandsInfo) {
+            ChatUtils.forceNextPrefixClass(getClass());
+            ChatUtils.sendMsg(this.hashCode(), Formatting.GRAY, "Toggled (highlight)%s(default) %s(default).", title, isActive() ? Formatting.GREEN + "on" : Formatting.RED + "off");
+        }
     }
 
     public void info(Text message) {
+        ChatUtils.forceNextPrefixClass(getClass());
         ChatUtils.sendMsg(title, message);
     }
 
     public void info(String message, Object... args) {
+        ChatUtils.forceNextPrefixClass(getClass());
         ChatUtils.info(title, message, args);
     }
 
     public void warning(String message, Object... args) {
+        ChatUtils.forceNextPrefixClass(getClass());
         ChatUtils.warning(title, message, args);
     }
 
     public void error(String message, Object... args) {
+        ChatUtils.forceNextPrefixClass(getClass());
         ChatUtils.error(title, message, args);
     }
 
@@ -150,7 +154,7 @@ public abstract class Module implements ISerializable<Module> {
         if (settingsTag instanceof NbtCompound) settings.fromTag((NbtCompound) settingsTag);
 
         boolean active = tag.getBoolean("active");
-        if (active != isActive()) toggle(Utils.canUpdate());
+        if (active != isActive()) toggle();
         setVisible(tag.getBoolean("visible"));
 
         return this;

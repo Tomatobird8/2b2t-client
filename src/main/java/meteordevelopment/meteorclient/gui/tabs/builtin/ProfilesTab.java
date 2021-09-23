@@ -19,7 +19,9 @@ import meteordevelopment.meteorclient.gui.widgets.pressable.WMinus;
 import meteordevelopment.meteorclient.gui.widgets.pressable.WPlus;
 import meteordevelopment.meteorclient.systems.profiles.Profile;
 import meteordevelopment.meteorclient.systems.profiles.Profiles;
+import meteordevelopment.meteorclient.utils.misc.NbtUtils;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.nbt.NbtCompound;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
@@ -43,21 +45,12 @@ public class ProfilesTab extends Tab {
     }
 
     private static class ProfilesScreen extends WindowTabScreen {
-
         public ProfilesScreen(GuiTheme theme, Tab tab) {
             super(theme, tab);
         }
 
         @Override
-        protected void init() {
-            super.init();
-
-            initWidget();
-        }
-
-        private void initWidget() {
-            clear();
-
+        public void initWidgets() {
             WTable table = add(theme.table()).expandX().minWidth(300).widget();
 
             // Waypoints
@@ -75,13 +68,13 @@ public class ProfilesTab extends Tab {
 
                 // Edit
                 WButton edit = table.add(theme.button(GuiRenderer.EDIT)).widget();
-                edit.action = () -> mc.openScreen(new EditProfileScreen(theme, profile, this::initWidget));
+                edit.action = () -> mc.setScreen(new EditProfileScreen(theme, profile, this::reload));
 
                 // Remove
                 WMinus remove = table.add(theme.minus()).widget();
                 remove.action = () -> {
                     Profiles.get().remove(profile);
-                    initWidget();
+                    reload();
                 };
 
                 table.row();
@@ -92,7 +85,24 @@ public class ProfilesTab extends Tab {
 
             // Create
             WButton create = table.add(theme.button("Create")).expandX().widget();
-            create.action = () -> mc.openScreen(new EditProfileScreen(theme, null, this::initWidget));
+            create.action = () -> mc.setScreen(new EditProfileScreen(theme, null, this::reload));
+        }
+
+        @Override
+        public boolean toClipboard() {
+            return NbtUtils.toClipboard(Profiles.get());
+        }
+
+        @Override
+        public boolean fromClipboard() {
+            NbtCompound clipboard = NbtUtils.fromClipboard(Profiles.get().toTag());
+
+            if (clipboard != null) {
+                Profiles.get().fromTag(clipboard);
+                return true;
+            }
+
+            return false;
         }
     }
 
@@ -111,12 +121,11 @@ public class ProfilesTab extends Tab {
             this.action = action;
 
             newProfile.set(oldProfile);
-
-            initWidgets(oldProfile, newProfile.loadOnJoinIps);
         }
 
-        private boolean nameFilter(String text, char character) {
-            return (character >= 'a' && character <= 'z') || (character >= 'A' && character <= 'Z') || (character >= '0' && character <= '9') || character == '-' || character == '.';
+        @Override
+        public void initWidgets() {
+            initWidgets(oldProfile, newProfile.loadOnJoinIps);
         }
 
         public void initWidgets(Profile ogProfile, List<String> list) {
@@ -140,7 +149,7 @@ public class ProfilesTab extends Tab {
             // On Server Join
             table.add(theme.label("Load when Joining:"));
             WTable ips = table.add(theme.table()).widget();
-            fillTable(ips, list);
+            initTable(ips, list);
             table.row();
 
             table.add(theme.horizontalSeparator()).expandX();
@@ -208,12 +217,7 @@ public class ProfilesTab extends Tab {
             enterAction = save.action;
         }
 
-        private boolean ipFilter(String text, char character) {
-            if (text.contains(":") && character == ':') return false;
-            return (character >= 'a' && character <= 'z') || (character >= 'A' && character <= 'Z') || (character >= '0' && character <= '9') || character == '.';
-        }
-
-        private void fillTable(WTable table, List<String> ipList) {
+        private void initTable(WTable table, List<String> ipList) {
             if (ipList.isEmpty()) ipList.add("");
 
             for (int i = 0; i < ipList.size(); i++) {
@@ -248,6 +252,15 @@ public class ProfilesTab extends Tab {
 
                 table.row();
             }
+        }
+
+        private boolean nameFilter(String text, char character) {
+            return (character >= 'a' && character <= 'z') || (character >= 'A' && character <= 'Z') || (character >= '0' && character <= '9') || character == '-' || character == '.';
+        }
+
+        private boolean ipFilter(String text, char character) {
+            if (text.contains(":") && character == ':') return false;
+            return (character >= 'a' && character <= 'z') || (character >= 'A' && character <= 'Z') || (character >= '0' && character <= '9') || character == '.';
         }
 
         @Override

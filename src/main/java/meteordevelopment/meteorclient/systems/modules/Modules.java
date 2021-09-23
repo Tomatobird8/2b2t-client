@@ -267,7 +267,7 @@ public class Modules extends System<Modules> {
     private void onGameJoined(GameJoinedEvent event) {
         synchronized (active) {
             for (Module module : modules) {
-                if (module.isActive()) {
+                if (module.isActive() && !module.runInMainMenu) {
                     MeteorClient.EVENT_BUS.subscribe(module);
                     module.onActivate();
                 }
@@ -279,7 +279,7 @@ public class Modules extends System<Modules> {
     private void onGameLeft(GameLeftEvent event) {
         synchronized (active) {
             for (Module module : modules) {
-                if (module.isActive()) {
+                if (module.isActive() && !module.runInMainMenu) {
                     MeteorClient.EVENT_BUS.unsubscribe(module);
                     module.onDeactivate();
                 }
@@ -290,7 +290,7 @@ public class Modules extends System<Modules> {
     public void disableAll() {
         synchronized (active) {
             for (Module module : modules) {
-                if (module.isActive()) module.toggle(Utils.canUpdate());
+                if (module.isActive()) module.toggle();
             }
         }
     }
@@ -517,6 +517,7 @@ public class Modules extends System<Modules> {
         add(new SpawnProofer());
         add(new Timer());
         add(new VeinMiner());
+        add(new HighwayBuilder());
     }
 
     private void initMisc() {

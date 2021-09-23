@@ -38,28 +38,25 @@ public class BlockDataSettingScreen extends WindowScreen {
         super(theme, "Configure Blocks");
 
         this.setting = setting;
+    }
 
+    @Override
+    public void initWidgets() {
         WTextBox filter = add(theme.textBox("")).minWidth(400).expandX().widget();
         filter.setFocused(true);
         filter.action = () -> {
             filterText = filter.get().trim();
 
             table.clear();
-            initWidgets();
+            initTable();
         };
 
         table = add(theme.table()).expandX().widget();
+
+        initTable();
     }
 
-    @Override
-    protected void init() {
-        super.init();
-
-        table.clear();
-        initWidgets();
-    }
-
-    private <T extends ICopyable<T> & ISerializable<T> & IChangeable & IBlockData<T>> void initWidgets() {
+    public <T extends ICopyable<T> & ISerializable<T> & IChangeable & IBlockData<T>> void initTable() {
         for (Block block : Registry.BLOCK) {
             T blockData = (T) setting.get().get(block);
 
@@ -81,7 +78,7 @@ public class BlockDataSettingScreen extends WindowScreen {
                 T data = blockData;
                 if (data == null) data = (T) setting.defaultData.get().copy();
 
-                mc.openScreen(data.createScreen(theme, block, (BlockDataSetting<T>) setting));
+                mc.setScreen(data.createScreen(theme, block, (BlockDataSetting<T>) setting));
             };
 
             WButton reset = table.add(theme.button(GuiRenderer.RESET)).widget();
@@ -91,7 +88,7 @@ public class BlockDataSettingScreen extends WindowScreen {
 
                 if (blockData != null && blockData.isChanged()) {
                     table.clear();
-                    initWidgets();
+                    initTable();
                 }
             };
 

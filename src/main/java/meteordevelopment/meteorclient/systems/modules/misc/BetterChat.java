@@ -29,6 +29,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 public class BetterChat extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
@@ -222,6 +223,26 @@ public class BetterChat extends Module {
 
         Text message = event.message;
 
+        if (filterRegex.get()) {
+            for (int i = 0; i < regexFilters.get().size(); i++) {
+                Pattern p;
+                try {
+                    p = Pattern.compile(regexFilters.get().get(i));
+                }
+                catch (PatternSyntaxException e) {
+                    error("Removing Invalid regex: %s", regexFilters.get().get(i));
+                    regexFilters.get().remove(i);
+                    continue;
+                }
+
+
+                if (p.matcher(message.getString()).find()) {
+                    event.cancel();
+                    return;
+                }
+            }
+        }
+
         if (timestamps.get()) {
             Matcher matcher = Pattern.compile("^(<[0-9]{2}:[0-9]{2}>\\s)").matcher(message.getString());
             if (matcher.matches()) message.getSiblings().subList(0, 8).clear();
@@ -233,16 +254,6 @@ public class BetterChat extends Module {
 
         if (playerHeads.get()) {
             message = new LiteralText("  ").append(message);
-        }
-
-        if (filterRegex.get()) {
-            for (String regexFilters : regexFilters.get()) {
-                if (filterRegex(Pattern.compile(regexFilters))) {
-                    ((ChatHudAccessor) mc.inGameHud.getChatHud()).getMessages().remove(0);
-                    ((ChatHudAccessor) mc.inGameHud.getChatHud()).getVisibleMessages().remove(0);
-                    break; // No need to continue since the message is already filtered out (removed)
-                }
-            }
         }
 
         for (int i = 0; i < antiSpamDepth.get(); i++) {
@@ -296,17 +307,6 @@ public class BetterChat extends Module {
         }
 
         return null;
-    }
-
-    private boolean filterRegex(Pattern regex) {
-        LiteralText parsed = new LiteralText("");
-
-        ((ChatHudAccessor) mc.inGameHud.getChatHud()).getVisibleMessages().get(0).getText().accept((i, style, codePoint) -> {
-            parsed.append(new LiteralText(new String(Character.toChars(codePoint))).setStyle(style));
-            return true;
-        });
-
-        return regex.matcher(parsed.getString()).find();
     }
 
     @EventHandler
